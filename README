@@ -2,7 +2,19 @@ Use the Salesforce and Flowdock APIs
 
 Setup:
 =====
-Python3 virtual environment (e.g. virtualenv -p python3 env)
+• Python3 virtual environment (e.g. virtualenv -p python3 env)
+pip install -r req.txt
+
+• config/ → Your configuration, including OAuth2 tokens
+cp sforce-config.json.template sforce-config.json
+
+This page explains how to find the fields (cliend_id, client_secret, etc.):
+http://www.salesforce.com/us/developer/docs/api_rest/Content/intro_understanding_web_server_oauth_flow.htm
+
+Run ./show-sforce-api-versions.py to see the options for the ‘apiVersionUrl’.
+
+• current directory
+Always have your current directory set to the one containing this README file.
 
 Test:
 ====
