@@ -93,6 +93,7 @@ class SClient():
         """
         Writes the new token to the file and updates this instance's field.
         """
+        getLogger().info('Saving OAuth2 Token')
         with open(self._tokenFileName, 'w', encoding='utf-8') as f:
             json.dump(token, f)
         self._token = token
