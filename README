@@ -1,1 +1,5 @@
 Use the Salesforce and Flowdock APIs
+
+Setup:
+=====
+Python3 virtual environment (e.g. virtualenv -p python3 env)
