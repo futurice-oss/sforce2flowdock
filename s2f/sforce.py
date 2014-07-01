@@ -103,17 +103,63 @@ class SClient():
         """
         Returns a new OAuth2Session configured from this object's settings.
 
-        It auto-refreshes the token.
+        It auto-refreshes the token and saves it.
         """
         # http://requests-oauthlib.readthedocs.org/en/latest/oauth2_workflow.html#refreshing-tokens
         client = requests_oauthlib.OAuth2Session(self._config['client_id'],
-                token=self._token,
-                auto_refresh_url=type(self)._tokenUri,
-                auto_refresh_kwargs={
-                    'client_id': self._config['client_id'],
-                    'client_secret': self._config['client_secret'],
-                },
-                token_updater=self._saveToken)
+                token=self._token)
+
+        def refreshAndSaveToken():
+            getLogger().info('Refreshing SalesForce access token')
+            refresh_url = type(self)._tokenUri
+            refresh_kwargs = {
+                'client_id': self._config['client_id'],
+                'client_secret': self._config['client_secret'],
+            }
+            token = client.refresh_token(refresh_url, **refresh_kwargs)
+            self._saveToken(token)
+
+        origRequest = client.request
+
+        def autoRefreshingRequest(*args, **kwargs):
+            """
+            Replace the client's .request(…) method with one that
+            auto-refreshes to token.
+
+            The library says the OAuth2 protocol doesn't distinguish failures
+            caused by an expired access token from other failures (e.g. by a
+            special HTTP code).
+
+            The library gives some support, including auto-refreshing the token
+            for us. It does this by checking the expiration time before making
+            a request (this is a potential race condition → the remote server
+            may still think the token is expired even if we don't). In
+            addition, SalesForce doesn't return the expires_{in|at} field with
+            the token, so the mechanism can't work.
+
+            Here, we check the SalesForce response (HTTP status code and JSON
+            body) after each request. If SalesForce says the token is expired,
+            we refresh the token and perform the same request again.
+            """
+            result = origRequest(*args, **kwargs)
+
+            # If the token is expired, refresh it and do the request again
+            if result.status_code == 401:
+                try:
+                    j = result.json()
+                except ValueError:
+                    pass
+                else:
+                    if type(j) == list and len(j):
+                        j = j[0]
+                        if (type(j) == dict and 'errorCode' in j and
+                                j['errorCode'] == 'INVALID_SESSION_ID'):
+                            refreshAndSaveToken()
+                            result = origRequest(*args, **kwargs)
+
+            return result
+
+        client.request = autoRefreshingRequest
         return client
 
 
