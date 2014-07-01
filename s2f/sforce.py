@@ -7,6 +7,8 @@ INSTANCE_NAME.
 """
 
 import contextlib
+import datetime
+import dateutil.parser
 import json
 import logging
 import requests_oauthlib
@@ -211,3 +213,50 @@ class SClient():
         # ‘requests’ library, and we probably shouldn't manually close here.
         with contextlib.closing(client.get(url)) as resp:
             return resp.json()
+
+
+    def getCompanyChatter(self, maxSecs=60*60*24*31, maxItems=100, maxPages=5,
+            url='chatter/feeds/company/feed-items'):
+        """
+        Get chatter items from url, stopping when any of the limits is reached.
+
+        Stop if we reach the end or found items older than maxSecs, or found
+        more than maxItems or got more than maxPages of results.
+        The URL parameter may be overriden, e.g. with an ‘updatesUrl’
+        previously returned by the API.
+        """
+        items = []
+        maxSecsExceeded = False
+        pagesRetrieved = 0
+
+        client = self._getOAuth2Client()
+        while (url and not maxSecsExceeded and len(items) < maxItems and
+                pagesRetrieved < maxPages):
+            url = urljoin(self._getAPIRootUrl(), url)
+            data = client.get(url).json()
+            if pagesRetrieved == 0:
+                getLogger().info('Future updates at ' + data['updatesUrl'])
+
+            pagesRetrieved += 1
+            items.extend(data['items'])
+            if len(items):
+                now = datetime.datetime.now().timestamp()
+                for fName in ['createdDate', 'modifiedDate']:
+                    then = dateutil.parser.parse(items[-1][fName]).timestamp()
+                    if now - then > maxSecs:
+                        maxSecsExceeded = True
+                        break
+
+            url = data['nextPageUrl']
+
+        return items
+
+
+    def getOpportunitiesChatter(self, *args, **kwargs):
+        """
+        Filter getCompanyChatter() results to opportunities.
+
+        Forwards all its arguments to getCompanyChatter().
+        """
+        return list(filter(lambda x: x['parent']['type'] == 'Opportunity',
+            self.getCompanyChatter(*args, **kwargs)))
