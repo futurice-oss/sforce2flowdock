@@ -9,7 +9,10 @@ from s2f import util
 def parseArgs():
     p = argparse.ArgumentParser(description='Print JSON from SalesForce URL')
     p.add_argument('url', help='''SalesForce URL to GET JSON from.
-            If relative, it's interpreted as relative to the API root.''')
+            If relative, it's interpreted as relative to the API root.
+            You can start the exploration by passing an empty string ''
+            for this argument.
+            ''')
     return p.parse_args()
 
 
