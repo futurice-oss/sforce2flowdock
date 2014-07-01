@@ -143,6 +143,17 @@ class SClient():
         return url
 
 
+    def getJson(self, url):
+        """
+        Returns the JSON from url. If relative, it's relative to the API Root.
+
+        Use this to test & explore the API.
+        """
+        client = self._getOAuth2Client()
+        url = urljoin(self._getAPIRootUrl(), url)
+        return client.get(url).json()
+
+
     def getAvailableResources(self):
         """
         List the available API Resources.

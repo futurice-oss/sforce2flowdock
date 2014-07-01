@@ -11,7 +11,7 @@ cp sforce-config.json.template sforce-config.json
 This page explains how to find the fields (cliend_id, client_secret, etc.):
 http://www.salesforce.com/us/developer/docs/api_rest/Content/intro_understanding_web_server_oauth_flow.htm
 
-Run ./show-sforce-api-versions.py to see the options for the ‘apiVersionUrl’.
+Run ./sforce-show-api-versions.py to see the options for the ‘apiVersionUrl’.
 
 • current directory
 Always have your current directory set to the one containing this README file.
@@ -19,3 +19,6 @@ Always have your current directory set to the one containing this README file.
 Test:
 ====
 ./test.sh
+
+• Explore the SalesForce API by hand
+./sforce-get.py --help
