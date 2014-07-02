@@ -218,15 +218,18 @@ class SClient():
 
 
     def getCompanyChatter(self, url='chatter/feeds/company/feed-items',
-            maxSecs=60*60*24*31, maxItems=100, maxPages=5):
+            maxSecs=60*60*24*31, maxItems=100, maxPages=5, hardLimit=False):
         """
         Get chatter items from url, stopping when any of the limits is reached.
 
-        Stop if we reach the end or found items older than maxSecs, or found
-        more than maxItems or got more than maxPages of results.
         The URL parameter may be overriden, e.g. with an ‘updatesUrl’
         previously returned by the API.
+        Stop if we reach the end or found items older than maxSecs, or found
+        maxItems or got maxPages of results.
+        If hardLimit is True, drop any retrieved results which exceed these
+        limits, otherwise keep them.
         """
+        now = datetime.datetime.now().timestamp()
         items = []
         maxSecsExceeded = False
         pagesRetrieved = 0
@@ -240,14 +243,17 @@ class SClient():
                 getLogger().info('Future updates at ' + data['updatesUrl'])
 
             pagesRetrieved += 1
-            items.extend(data['items'])
-            if len(items):
-                now = datetime.datetime.now().timestamp()
+            for item in data['items']:
+                if hardLimit and len(items) >= maxItems:
+                    break
                 for fName in ['createdDate', 'modifiedDate']:
-                    then = dateutil.parser.parse(items[-1][fName]).timestamp()
+                    then = dateutil.parser.parse(item[fName]).timestamp()
                     if now - then > maxSecs:
                         maxSecsExceeded = True
                         break
+                if hardLimit and maxSecsExceeded:
+                    break
+                items.append(item)
 
             url = data['nextPageUrl']
 

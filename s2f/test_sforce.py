@@ -23,14 +23,15 @@ class TestClient(unittest.TestCase):
 
     def test_getCompanyChatter(self):
         client = getSClient()
-        self.assertTrue(len(client.getCompanyChatter()) >= 0)
+        self.assertTrue(len(client.getCompanyChatter(maxPages=1)) >= 0)
 
     def test_getOpportunitiesChatter(self):
         client = getSClient()
-        opChatter = client.getOpportunitiesChatter()
+        opChatter = client.getOpportunitiesChatter(maxPages=1)
         self.assertTrue(len(opChatter) >= 0)
 
     def testGetOpportunitiesChatterDetails(self):
         client = getSClient()
-        details = client.getOpportunitiesChatterDetails(maxPages=1)
+        details = client.getOpportunitiesChatterDetails(maxItems=1,
+                hardLimit=True)
         self.assertTrue(len(details) >= 0)
