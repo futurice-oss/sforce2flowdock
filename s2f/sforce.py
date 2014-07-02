@@ -217,8 +217,8 @@ class SClient():
             return resp.json()
 
 
-    def getCompanyChatter(self, maxSecs=60*60*24*31, maxItems=100, maxPages=5,
-            url='chatter/feeds/company/feed-items'):
+    def getCompanyChatter(self, url='chatter/feeds/company/feed-items',
+            maxSecs=60*60*24*31, maxItems=100, maxPages=5):
         """
         Get chatter items from url, stopping when any of the limits is reached.
 
@@ -263,3 +263,84 @@ class SClient():
         return list(filter(
             lambda x: util.getNested(x, 'parent.type') == 'Opportunity',
             self.getCompanyChatter(*args, **kwargs)))
+
+
+    def getOpportunitiesChatterDetails(self, *args, **kwargs):
+        """
+        Return custom data structures for the Opportunities chatter.
+
+        Pass all arguments to getOpportunitiesChatter(). Get additional objects
+        from the API (e.g. Opportunities, Accounts, Users).
+        Return a list of objects with information to display, one object for
+        each item in the opportunities chatter.
+        """
+        opChatter = self.getOpportunitiesChatter(*args, **kwargs)
+
+        def getSetOfNestedValues(srcIter, path):
+            """
+            Return a set with all truthy values at path in srcIter
+            """
+            result = set()
+            for s in srcIter:
+                v = util.getNested(s, path)
+                if v:
+                    result.add(v)
+            return result
+
+        opportunityIds = getSetOfNestedValues(opChatter, 'parent.id')
+        oppById = {x:self.getOpportunity(x) for x in opportunityIds}
+
+        accountIds = getSetOfNestedValues(oppById.values(), 'AccountId')
+        accById = {x:self.getAccount(x) for x in accountIds}
+
+        userIds = getSetOfNestedValues(oppById.values(), 'OwnerId')
+        usersById = {x:self.getUser(x) for x in userIds}
+
+        def customData(opC):
+            """
+            Create a custom data structure for an opportunity chatter item.
+            """
+            ns = util.getNested
+            opp = ns(oppById, ns(opC, 'parent.id', ''))
+            # If the nested fields have a value of None, we return None to the
+            # caller. But if the fiels don't exist, the SalesForce data
+            # structure is different than what we expect, so we return these
+            # truthy warning strings.
+            return {
+                'opportunity_name': ns(opp, 'Name', 'Unknown Opportunity'),
+                'account_name': ns(accById,
+                    ns(opp, 'AccountId', '') + '.Name', 'Unknown Account'),
+                'opportunity_owner': ns(usersById,
+                    ns(opp, 'OwnerId', '') + '.Name', 'Unknown Owner'),
+                'stage': ns(opp, 'StageName', '¡Missing! StageName'),
+                'amount': ns(opp, 'Amount', '¡Missing! Amount'),
+                'probability': ns(opp, 'Probability', '¡Missing! Probability'),
+                'close_date': ns(opp, 'CloseDate', '¡Missing! CloseDate'),
+                'type_of_sales': ns(opp, 'Type_of_Sales__c',
+                    '¡Missing! Type_of_Sales__c'),
+                'average_hour_price': ns(opp, 'Average_Hour_Price__c',
+                    '¡Missing! Average_Hour_Price__c'),
+                'futu_team': ns(opp, 'Futu_Team__c', '¡Missing! Futu_Team__c'),
+
+                # not sure if the body.text is always present, so not reporting
+                # it with a warning string.
+                'text': ns(opC, 'body.text'),
+                'modified_date': ns(opC, 'modifiedDate',
+                    '¡Missing! modifiedDate'),
+                'actor_name': ns(opC, 'actor.name', '¡Missing! actor.name'),
+                'type': ns(opC, 'type', '¡Missing! type'),
+                'preamble_text': ns(opC, 'preamble.text',
+                    '¡Missing! preamble.text'),
+            }
+
+        return [customData(x) for x in opChatter]
+
+
+    def getOpportunity(self, ID):
+        return self.getJson('sobjects/Opportunity/' + ID)
+
+    def getAccount(self, ID):
+        return self.getJson('sobjects/Account/' + ID)
+
+    def getUser(self, ID):
+        return self.getJson('sobjects/User/' + ID)

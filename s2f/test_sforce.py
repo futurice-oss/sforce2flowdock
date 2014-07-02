@@ -28,22 +28,9 @@ class TestClient(unittest.TestCase):
     def test_getOpportunitiesChatter(self):
         client = getSClient()
         opChatter = client.getOpportunitiesChatter()
-        """
-        first = True
-        for op in opChatter:
-            if first:
-                first = False
-            else:
-                print()
-            for dotPath, label in {
-                'parent.name': 'Opportunity name',
-                'body.text': 'Text',
-                'modifiedDate': 'When',
-                'parent.url': 'Opportunity URL',
-                'actor.name': 'Who',
-                'type': 'Type',
-                'preamble.text': 'Preamble',
-                    }.items():
-                print(label + ':', util.getNested(op, dotPath, '¡NOT FOUND!'))
-        """
         self.assertTrue(len(opChatter) >= 0)
+
+    def testGetOpportunitiesChatterDetails(self):
+        client = getSClient()
+        details = client.getOpportunitiesChatterDetails(maxPages=1)
+        self.assertTrue(len(details) >= 0)
