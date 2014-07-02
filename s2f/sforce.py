@@ -15,6 +15,8 @@ import requests_oauthlib
 from urllib.parse import urljoin
 import urllib.request
 
+from s2f import util
+
 
 def getLogger():
     return logging.getLogger(__name__)
@@ -258,5 +260,6 @@ class SClient():
 
         Forwards all its arguments to getCompanyChatter().
         """
-        return list(filter(lambda x: x['parent']['type'] == 'Opportunity',
+        return list(filter(
+            lambda x: util.getNested(x, 'parent.type') == 'Opportunity',
             self.getCompanyChatter(*args, **kwargs)))
