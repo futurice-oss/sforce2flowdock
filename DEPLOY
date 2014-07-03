@@ -5,3 +5,15 @@ Run post-to-flowdock.py regularly (e.g. every 20 minutes using cron).
 It documents (--help) the file it needs, and config/ has templates for them.
 To create the SalesForce token file, run the tests (./test.sh) and authorize
 the app.
+
+Example:
+---- ~/config/post-to-flowdock.sh ----
+#! /usr/bin/env bash
+
+. ~/venv/bin/activate
+./sforce2flowdock/post-to-flowdock.py ~/config/
+---- ~/config/post-to-flowdock.sh ----
+chmod u+x ~/config/post-to-flowdock.sh
+
+crontab -e
+*/20 * * * *	bash --login ~/config/post-to-flowdock.sh >>~/config/stdout 2>>~/config/stderr

@@ -4,7 +4,7 @@
         "First Team Name": "Flow API Token",
         "Another Team Name": "Flow API Token"
     },
-    "externalUserName": "Sforce2Flowdock_App",
+    "externalUserName": "Sforce2Flowdock",
     "tags": [],
 
     "defaultFlow": "Flow API Token. This ‘defaultFlow’ field is optional",
