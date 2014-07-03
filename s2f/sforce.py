@@ -1,9 +1,6 @@
 """
 Helpers for using the SalesForce API.
 https://developer.salesforce.com/page/REST_API
-
-Your application should explicitly set the following variables in this module:
-INSTANCE_NAME.
 """
 
 import contextlib
@@ -218,14 +215,15 @@ class SClient():
 
 
     def getCompanyChatter(self, url='chatter/feeds/company/feed-items',
-            maxSecs=60*60*24*31, maxItems=100, maxPages=5, hardLimit=False):
+            maxSeconds=60*60*24*31, maxFeedItems=100, maxPages=5,
+            hardLimit=False):
         """
         Get chatter items from url, stopping when any of the limits is reached.
 
         The URL parameter may be overriden, e.g. with an ‘updatesUrl’
         previously returned by the API.
-        Stop if we reach the end or found items older than maxSecs, or found
-        maxItems or got maxPages of results.
+        Stop if we reach the end or found items older than maxSeconds, or found
+        maxFeedItems or got maxPages of results.
         If hardLimit is True, drop any retrieved results which exceed these
         limits, otherwise keep them.
         """
@@ -235,7 +233,7 @@ class SClient():
         pagesRetrieved = 0
 
         client = self._getOAuth2Client()
-        while (url and not maxSecsExceeded and len(items) < maxItems and
+        while (url and not maxSecsExceeded and len(items) < maxFeedItems and
                 pagesRetrieved < maxPages):
             url = urljoin(self._getAPIRootUrl(), url)
             data = client.get(url).json()
@@ -244,11 +242,11 @@ class SClient():
 
             pagesRetrieved += 1
             for item in data['items']:
-                if hardLimit and len(items) >= maxItems:
+                if hardLimit and len(items) >= maxFeedItems:
                     break
                 for fName in ['createdDate', 'modifiedDate']:
                     then = dateutil.parser.parse(item[fName]).timestamp()
-                    if now - then > maxSecs:
+                    if now - then > maxSeconds:
                         maxSecsExceeded = True
                         break
                 if hardLimit and maxSecsExceeded:
@@ -260,27 +258,46 @@ class SClient():
         return items
 
 
-    def getOpportunitiesChatter(self, *args, **kwargs):
+    def getOpportunitiesChatter(self, *args, maxOpportunities=None, **kwargs):
         """
         Filter getCompanyChatter() results to opportunities.
 
-        Forwards all its arguments to getCompanyChatter().
+        If maxOpportunities is given, only that number of items are kept after
+        filtering.
+        Forwards all its other arguments to getCompanyChatter().
         """
-        return list(filter(
+        result = list(filter(
             lambda x: util.getNested(x, 'parent.type') == 'Opportunity',
             self.getCompanyChatter(*args, **kwargs)))
+        if maxOpportunities is not None:
+            result = result[:maxOpportunities]
+        return result
 
 
-    def getOpportunitiesChatterDetails(self, *args, **kwargs):
+    def getOpportunitiesChatterDetails(self, *args, maxTeamOpportunities=None,
+            **kwargs):
         """
         Return custom data structures for the Opportunities chatter.
 
-        Pass all arguments to getOpportunitiesChatter(). Get additional objects
-        from the API (e.g. Opportunities, Accounts, Users).
+        If maxTeamOpportunities is given, keeps only so many opportunities for
+        each Futu_Team.
+        Pass all other arguments to getOpportunitiesChatter(). Get additional
+        objects from the API (e.g. Opportunities, Accounts, Users).
         Return a list of objects with information to display, one object for
         each item in the opportunities chatter.
         """
+        getLogger().info('Getting SalesForce opportunities chatter')
         opChatter = self.getOpportunitiesChatter(*args, **kwargs)
+        ns = util.getNested
+
+        if maxTeamOpportunities is not None:
+            opCountForTeam = {}
+            def filterFunc(oc):
+                team = ns(oc, 'Futu_Team__c', '')
+                opCountForTeam[team] = 1 + (opCountForTeam[team]
+                        if team in opCountForTeam else 0)
+                return opCountForTeam[team] <= maxTeamOpportunities
+            opChatter = filter(filterFunc, opChatter)
 
         def getSetOfNestedValues(srcIter, path):
             """
@@ -293,12 +310,15 @@ class SClient():
                     result.add(v)
             return result
 
+        getLogger().info('Getting SalesForce Opportunity objects')
         opportunityIds = getSetOfNestedValues(opChatter, 'parent.id')
         oppById = {x:self.getOpportunity(x) for x in opportunityIds}
 
+        getLogger().info('Getting SalesForce Accounts')
         accountIds = getSetOfNestedValues(oppById.values(), 'AccountId')
         accById = {x:self.getAccount(x) for x in accountIds}
 
+        getLogger().info('Getting SalesForce Users')
         userIds = getSetOfNestedValues(oppById.values(), 'OwnerId')
         usersById = {x:self.getUser(x) for x in userIds}
 
@@ -306,7 +326,6 @@ class SClient():
             """
             Create a custom data structure for an opportunity chatter item.
             """
-            ns = util.getNested
             opp = ns(oppById, ns(opC, 'parent.id', ''))
             # If the nested fields have a value of None, we return None to the
             # caller. But if the fiels don't exist, the SalesForce data

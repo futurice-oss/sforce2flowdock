@@ -32,6 +32,6 @@ class TestClient(unittest.TestCase):
 
     def testGetOpportunitiesChatterDetails(self):
         client = getSClient()
-        details = client.getOpportunitiesChatterDetails(maxItems=1,
-                hardLimit=True)
+        details = client.getOpportunitiesChatterDetails(maxPages=1,
+                maxOpportunities=1)
         self.assertTrue(len(details) >= 0)

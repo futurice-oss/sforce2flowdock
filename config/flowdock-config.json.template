@@ -1,0 +1,12 @@
+{
+    "prefix": "[#SalesForce]",
+    "flowForTeam": {
+        "First Team Name": "Flow API Token",
+        "Another Team Name": "Flow API Token"
+    },
+    "externalUserName": "Sforce2Flowdock_App",
+    "tags": [],
+
+    "defaultFlow": "Flow API Token. This ‘defaultFlow’ field is optional",
+    "defaultFlowPrefix": "[#SalesForce unknown Team]. This ‘defaultFlowPrefix’ field is optional. If not given, ‘prefix’ is used."
+}
