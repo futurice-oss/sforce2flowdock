@@ -15,7 +15,8 @@ def chat(flowApiToken, externalUserName, content, tags=[]):
     Post a message to a flow's chat from an "external user".
 
     https://www.flowdock.com/api/chat
-    externalUserName should contain no spaces or Flowdock will return an error.
+    externalUserName should contain no spaces or Flowdock will return an error,
+    and it looks like it should be 16 characters or less.
     tags are optional additional tags; the message content is automatically
     parsed for tags.
 

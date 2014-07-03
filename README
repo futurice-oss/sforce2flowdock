@@ -1,5 +1,8 @@
 Use the Salesforce and Flowdock APIs
 
+This file describes how to set up and run in dev.
+The DEPLOY file describes a suggested deployment setup.
+
 Setup:
 =====
 • Python3 virtual environment (e.g. virtualenv -p python3 env)

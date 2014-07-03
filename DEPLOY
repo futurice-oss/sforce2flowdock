@@ -1,0 +1,7 @@
+Make a separate directory to store the configuration files and state, outside
+the repository.
+
+Run post-to-flowdock.py regularly (e.g. every 20 minutes using cron).
+It documents (--help) the file it needs, and config/ has templates for them.
+To create the SalesForce token file, run the tests (./test.sh) and authorize
+the app.

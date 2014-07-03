@@ -218,7 +218,7 @@ class SClient():
             maxSeconds=60*60*24*31, maxFeedItems=100, maxPages=5,
             hardLimit=False):
         """
-        Get chatter items from url, stopping when any of the limits is reached.
+        Get chatter items and updatesUrl, stopping when any limits are reached.
 
         The URL parameter may be overriden, e.g. with an ‘updatesUrl’
         previously returned by the API.
@@ -231,6 +231,7 @@ class SClient():
         items = []
         maxSecsExceeded = False
         pagesRetrieved = 0
+        updatesUrl = None
 
         client = self._getOAuth2Client()
         while (url and not maxSecsExceeded and len(items) < maxFeedItems and
@@ -238,7 +239,7 @@ class SClient():
             url = urljoin(self._getAPIRootUrl(), url)
             data = client.get(url).json()
             if pagesRetrieved == 0:
-                getLogger().info('Future updates at ' + data['updatesUrl'])
+                updatesUrl = data['updatesUrl']
 
             pagesRetrieved += 1
             for item in data['items']:
@@ -255,29 +256,29 @@ class SClient():
 
             url = data['nextPageUrl']
 
-        return items
+        return items, updatesUrl
 
 
     def getOpportunitiesChatter(self, *args, maxOpportunities=None, **kwargs):
         """
-        Filter getCompanyChatter() results to opportunities.
+        Filter getCompanyChatter() results to opportunities & updatesUrl
 
         If maxOpportunities is given, only that number of items are kept after
         filtering.
         Forwards all its other arguments to getCompanyChatter().
         """
-        result = list(filter(
-            lambda x: util.getNested(x, 'parent.type') == 'Opportunity',
-            self.getCompanyChatter(*args, **kwargs)))
+        result, updatesUrl = self.getCompanyChatter(*args, **kwargs)
+        result = [x for x in result if
+                util.getNested(x, 'parent.type') == 'Opportunity']
         if maxOpportunities is not None:
             result = result[:maxOpportunities]
-        return result
+        return result, updatesUrl
 
 
     def getOpportunitiesChatterDetails(self, *args, maxTeamOpportunities=None,
             **kwargs):
         """
-        Return custom data structures for the Opportunities chatter.
+        Return custom data structures for the Opportunities chatter & updatesUrl
 
         If maxTeamOpportunities is given, keeps only so many opportunities for
         each Futu_Team.
@@ -287,7 +288,7 @@ class SClient():
         each item in the opportunities chatter.
         """
         getLogger().info('Getting SalesForce opportunities chatter')
-        opChatter = self.getOpportunitiesChatter(*args, **kwargs)
+        opChatter, updatesUrl = self.getOpportunitiesChatter(*args, **kwargs)
 
         def getSetOfNestedValues(srcIter, path):
             """
@@ -365,7 +366,7 @@ class SClient():
                     '¡Missing! preamble.text'),
             }
 
-        return [customData(x) for x in opChatter]
+        return [customData(x) for x in opChatter], updatesUrl
 
 
     def getOpportunity(self, ID):

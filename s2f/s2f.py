@@ -53,6 +53,8 @@ def postNewOpportunities(sforceCfgFileName, sforceTokenFileName,
         flowdockCfgFileName, limitsFileName, startUrl=None):
     """
     Post new SalesForce Opportunities activity to Flowdock Chat.
+
+    Returns the updatesUrl to use next time to fetch only newer activity.
     """
     sClient = s2f.sforce.SClient(sforceCfgFileName, sforceTokenFileName)
     fClient = s2f.flowdock.FClient(flowdockCfgFileName)
@@ -66,7 +68,7 @@ def postNewOpportunities(sforceCfgFileName, sforceTokenFileName,
     }
     if startUrl:
         kwArgs['url'] = startUrl
-    items = sClient.getOpportunitiesChatterDetails(**kwArgs)
+    items, updatesUrl = sClient.getOpportunitiesChatterDetails(**kwArgs)
     for item in items:
         try:
             msg = formatOpChatterDetail(item)
@@ -74,3 +76,4 @@ def postNewOpportunities(sforceCfgFileName, sforceTokenFileName,
         except:
             getLogger().error('While posting item «' + json.dumps(item) + '»:',
                     exc_info=sys.exc_info())
+    return updatesUrl
