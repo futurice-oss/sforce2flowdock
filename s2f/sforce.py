@@ -288,16 +288,6 @@ class SClient():
         """
         getLogger().info('Getting SalesForce opportunities chatter')
         opChatter = self.getOpportunitiesChatter(*args, **kwargs)
-        ns = util.getNested
-
-        if maxTeamOpportunities is not None:
-            opCountForTeam = {}
-            def filterFunc(oc):
-                team = ns(oc, 'Futu_Team__c', '')
-                opCountForTeam[team] = 1 + (opCountForTeam[team]
-                        if team in opCountForTeam else 0)
-                return opCountForTeam[team] <= maxTeamOpportunities
-            opChatter = filter(filterFunc, opChatter)
 
         def getSetOfNestedValues(srcIter, path):
             """
@@ -310,9 +300,26 @@ class SClient():
                     result.add(v)
             return result
 
+        ns = util.getNested
         getLogger().info('Getting SalesForce Opportunity objects')
         opportunityIds = getSetOfNestedValues(opChatter, 'parent.id')
         oppById = {x:self.getOpportunity(x) for x in opportunityIds}
+
+        if maxTeamOpportunities is not None:
+            opCountForTeam = {}
+            def filterFunc(oc):
+                opp = ns(oppById, ns(oc, 'parent.id'))
+                if not opp:
+                    return False
+                team = ns(opp, 'Futu_Team__c', '')
+                opCountForTeam[team] = 1 + (opCountForTeam[team]
+                        if team in opCountForTeam else 0)
+                return opCountForTeam[team] <= maxTeamOpportunities
+            opChatter = list(filter(filterFunc, opChatter))
+
+        # filter the opportunity objects
+        opportunityIds = getSetOfNestedValues(opChatter, 'parent.id')
+        oppById = {x:oppById[x] for x in opportunityIds}
 
         getLogger().info('Getting SalesForce Accounts')
         accountIds = getSetOfNestedValues(oppById.values(), 'AccountId')

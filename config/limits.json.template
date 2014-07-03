@@ -1,5 +1,5 @@
 {
-    "maxSeconds": 172800,
+    "maxSeconds": 259200,
     "maxPages": 10,
     "maxTeamOpportunities": 10
 }
