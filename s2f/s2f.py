@@ -59,7 +59,7 @@ def fmtForTeamInbox(detail, tzName):
     aware = pytz.utc.localize(naive)
     aware = aware.astimezone(pytz.timezone(tzName))
     timeStr = aware.strftime('%d %b %Y at %H:%M %Z')
-    txt += '― ' + detail['actor_name'] + ' (' + timeStr + ')'
+    txt += '– ' + detail['actor_name'] + ' (' + timeStr + ')'
 
     txt += ('\n\nOpportunity: ' +
             '{stage}, owner {opportunity_owner}, account {account_name}.'
