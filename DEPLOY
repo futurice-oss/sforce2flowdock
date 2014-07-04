@@ -14,7 +14,7 @@ Example:
 cd ~/config/
 
 . ~/venv/bin/activate
-./sforce2flowdock/post-to-flowdock.py ~/config/
+~/sforce2flowdock/post-to-flowdock.py ~/config/
 ---- ~/config/post-to-flowdock.sh ----
 chmod u+x ~/config/post-to-flowdock.sh
 
