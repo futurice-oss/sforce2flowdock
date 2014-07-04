@@ -302,8 +302,9 @@ class SClient():
             return result
 
         ns = util.getNested
-        getLogger().info('Getting SalesForce Opportunity objects')
         opportunityIds = getSetOfNestedValues(opChatter, 'parent.id')
+        getLogger().info('Getting {} SalesForce Opportunity objects'.format(
+            len(opportunityIds)))
         oppById = {x:self.getOpportunity(x) for x in opportunityIds}
 
         if maxTeamOpportunities is not None:
@@ -322,12 +323,13 @@ class SClient():
         opportunityIds = getSetOfNestedValues(opChatter, 'parent.id')
         oppById = {x:oppById[x] for x in opportunityIds}
 
-        getLogger().info('Getting SalesForce Accounts')
         accountIds = getSetOfNestedValues(oppById.values(), 'AccountId')
+        getLogger().info('Getting {} SalesForce Accounts'.format(
+            len(accountIds)))
         accById = {x:self.getAccount(x) for x in accountIds}
 
-        getLogger().info('Getting SalesForce Users')
         userIds = getSetOfNestedValues(oppById.values(), 'OwnerId')
+        getLogger().info('Getting {} SalesForce Users'.format(len(userIds)))
         usersById = {x:self.getUser(x) for x in userIds}
 
         def customData(opC):
