@@ -2,7 +2,7 @@
 
 import argparse
 import json
-import logging
+import logging, logging.handlers
 import os, os.path
 import socket
 import sys
@@ -25,7 +25,7 @@ def setupLogging():
             '%(asctime)s %(levelname)s:%(name)s:%(message)s',
             "%Y-%m-%d %H:%M:%S %z (%Z)")
 
-    fileH = logging.RotatingFileHandler('s2f.log', encoding='utf-8',
+    fileH = logging.handlers.RotatingFileHandler('s2f.log', encoding='utf-8',
             maxBytes=1024*1024*1, backupCount=5)
     fileH.setFormatter(formatter)
 
