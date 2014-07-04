@@ -10,6 +10,9 @@ Example:
 ---- ~/config/post-to-flowdock.sh ----
 #! /usr/bin/env bash
 
+# logs are placed in the current directory
+cd ~/config/
+
 . ~/venv/bin/activate
 ./sforce2flowdock/post-to-flowdock.py ~/config/
 ---- ~/config/post-to-flowdock.sh ----

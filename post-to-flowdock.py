@@ -11,15 +11,37 @@ from s2f import util
 import s2f.s2f
 
 
+def setupLogging():
+    """
+    Set up logging.
+
+    https://docs.python.org/3.4/howto/logging-cookbook.html
+    """
+    # Log UTC times
+    logging.Formatter.converter = time.gmtime
+    # Show the timezone
+    formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s:%(name)s:%(message)s',
+            "%Y-%m-%d %H:%M:%S %z (%Z)")
+
+    fileH = logging.RotatingFileHandler('s2f.log', encoding='utf-8',
+            maxBytes=1024*1024*1, backupCount=5)
+    fileH.setFormatter(formatter)
+
+    rootL = logging.getLogger()
+    rootL.setLevel(logging.INFO)
+    rootL.addHandler(fileH)
+
+setupLogging()
+
+def getLogger():
+    return logging.getLogger(__name__)
+
+
 PORT = 19876
 cfgFiles = ('sforce-config.json', 'sforce-token.json', 'flowdock-config.json',
         'limits.json')
 stateFileName = 'state.json'
-
-util.setupLogging()
-
-def getLogger():
-    return logging.getLogger(__name__)
 
 
 def parseArgs():
