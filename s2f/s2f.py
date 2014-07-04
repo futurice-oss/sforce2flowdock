@@ -1,5 +1,7 @@
+import datetime
 import json
 import logging
+import pytz
 import sys
 
 import s2f.sforce
@@ -45,11 +47,21 @@ def fmtForChat(detail):
     return result
 
 
-def fmtForTeamInbox(detail):
+def fmtForTeamInbox(detail, tzName):
     """
     Format opportunity chatter details to a data structure for Team Inbox.
     """
-    txt = ('Opportunity: ' +
+    txt = ''
+    if detail['text']:
+        txt += detail['text'] + '\n'
+
+    naive = datetime.datetime.utcfromtimestamp(detail['modified_ts'])
+    aware = pytz.utc.localize(naive)
+    aware = aware.astimezone(pytz.timezone(tzName))
+    timeStr = aware.strftime('%d %b %Y at %H:%M %Z')
+    txt += '― ' + detail['actor_name'] + ' (' + timeStr + ')'
+
+    txt += ('\n\nOpportunity: ' +
             '{stage}, owner {opportunity_owner}, account {account_name}.'
             ).format(**detail)
 
@@ -71,10 +83,6 @@ def fmtForTeamInbox(detail):
     if detail['type_of_sales']:
         lineItems.append('Type of sales: ' + detail['type_of_sales'])
     txt += '\n' + ', '.join(lineItems) + '.'
-
-    txt += '\n\n' + detail['actor_name']
-    if detail['text']:
-        txt += ':\n' + detail['text']
 
     return {
         'teamName': detail['futu_team'],
@@ -106,7 +114,8 @@ def postNewOpportunities(sforceCfgFileName, sforceTokenFileName,
     items, updatesUrl = sClient.getOpportunitiesChatterDetails(**kwArgs)
     for item in items:
         try:
-            fClient.postToInbox(**fmtForTeamInbox(item))
+            fClient.postToInbox(**fmtForTeamInbox(item,
+                fClient.getTeamTzName(item['futu_team'])))
         except:
             getLogger().error('While posting item «' + json.dumps(item) + '»:',
                     exc_info=sys.exc_info())

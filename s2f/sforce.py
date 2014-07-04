@@ -5,7 +5,7 @@ https://developer.salesforce.com/page/REST_API
 
 import contextlib
 import datetime
-import dateutil.parser
+import iso8601
 import json
 import logging
 import requests_oauthlib
@@ -245,11 +245,9 @@ class SClient():
             for item in data['items']:
                 if hardLimit and len(items) >= maxFeedItems:
                     break
-                for fName in ['createdDate', 'modifiedDate']:
-                    then = dateutil.parser.parse(item[fName]).timestamp()
-                    if now - then > maxSeconds:
-                        maxSecsExceeded = True
-                        break
+                then = iso8601.parse_date(item['modifiedDate']).timestamp()
+                if now - then > maxSeconds:
+                    maxSecsExceeded = True
                 if hardLimit and maxSecsExceeded:
                     break
                 items.append(item)
@@ -360,8 +358,8 @@ class SClient():
                 # not sure if the body.text is always present, so not reporting
                 # it with a warning string.
                 'text': ns(opC, 'body.text'),
-                'modified_date': ns(opC, 'modifiedDate',
-                    '¡Missing! modifiedDate'),
+                'modified_ts': int(iso8601.parse_date(
+                    ns(opC, 'modifiedDate', 0)).timestamp()),
                 'actor_name': ns(opC, 'actor.name', '¡Missing! actor.name'),
                 'type': ns(opC, 'type', '¡Missing! type'),
                 'preamble_text': ns(opC, 'preamble.text',

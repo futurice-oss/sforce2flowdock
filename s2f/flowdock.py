@@ -90,10 +90,23 @@ class FClient():
     def __init__(self, cfgFileName):
         with open(cfgFileName, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        self.flowForTeam = data['flowForTeam']
-        self.defaultFlow = util.getNested(data, 'defaultFlow')
+        self.teams = data['teams']
+        self.defaultTeam = util.getNested(data, 'defaultTeam')
 
         self.teamInbox = data['teamInbox']
+
+
+    def getTeamTzName(self, teamName):
+        if teamName in self.teams:
+            return self.teams[teamName]['timezone']
+        elif self.defaultTeam:
+            getLogger().warn('Unknown Team: ' + teamName +
+                ', returning default TimeZone')
+            return self.defaultTeam['timezone']
+        else:
+            getLogger().warn('Unknown Team: ' + teamName + ' and no default ' +
+                    'configured, returning UTC TimeZone')
+            return 'UTC'
 
 
     def postToInbox(self, teamName, subject, textContent, project=None,
@@ -103,12 +116,12 @@ class FClient():
 
         May throw exceptions.
         """
-        if teamName in self.flowForTeam:
-            apiToken = self.flowForTeam[teamName]
-        elif self.defaultFlow:
-            getLogger().warn('Unknown Team: ' + teamName + ', posting chat ' +
-                    'to default flow')
-            apiToken = self.defaultFlow
+        if teamName in self.teams:
+            apiToken = self.teams[teamName]['apiToken']
+        elif self.defaultTeam:
+            getLogger().warn('Unknown Team: ' + teamName +
+                    ', posting to default flow')
+            apiToken = self.defaultTeam['apiToken']
         else:
             getLogger().warn('Unknown Team: ' + teamName + ' and no default ' +
                     'flow configured')

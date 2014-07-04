@@ -1,9 +1,18 @@
 {
-    "flowForTeam": {
-        "First Team Name": "Flow API Token",
-        "Another Team Name": "Flow API Token"
+    "teams": {
+        "First Team Name": {
+            "apiToken": "Flow API Token",
+            "timezone": "TimeZone Name, e.g. UTC, Europe/Berlin"
+        },
+        "Another Team Name": {
+            "apiToken": "Flow API Token",
+            "timezone": "TimeZone Name"
+        }
     },
-    "defaultFlow": "Flow API Token. This ‘defaultFlow’ field is optional",
+    "defaultTeam": {
+        "apiToken": "Flow API Token",
+        "timezone": "TimeZone Name"
+    },
 
     "teamInbox": {
         "source": "SForce",
