@@ -1,3 +1,13 @@
+1. To re-deploy:
+===============
+Make a separate Python2 environment because fabric doesn't support Python3.
+virtualenv deploy-env
+. deploy-env/bin/activate
+pip install fabric
+fab [-u «your-ssh-username»] [-H «sever.name»] deploy
+
+2. To install on a new server:
+=============================
 Make a separate directory to store the configuration files and state, outside
 the repository.
 
