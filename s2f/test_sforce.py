@@ -35,3 +35,9 @@ class TestClient(unittest.TestCase):
         details, upUrl = client.getOpportunitiesChatterDetails(maxPages=1,
                 maxOpportunities=1)
         self.assertTrue(len(details) >= 0)
+
+    def testGetOpportunities(self):
+        client = getSClient()
+        self.assertTrue(len(client.getOpportunities()) >= 0)
+        self.assertTrue(len(client.getOpportunities(
+            minModified='2014-01-01T00:00:00.000+0000')) >= 0)

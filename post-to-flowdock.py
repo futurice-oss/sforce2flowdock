@@ -41,7 +41,7 @@ def getLogger():
 
 PORT = 19876
 cfgFiles = ('sforce-config.json', 'sforce-token.json', 'flowdock-config.json',
-        'limits.json')
+        'limits.json', 'known-opportunities.json')
 stateFileName = 'state.json'
 
 
@@ -84,8 +84,8 @@ if __name__ == '__main__':
         getLogger().warn('Another instance is already running, exiting')
         sys.exit(0)
 
-    sCfg, sTok, fCfg, lim = map(lambda p: os.path.join(args.config_dir, p),
-            cfgFiles)
+    sCfg, sTok, fCfg, lim, opp = map(
+            lambda p: os.path.join(args.config_dir, p), cfgFiles)
     stateF = os.path.join(args.config_dir, stateFileName)
 
     state = {}
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         pass
     updatesUrl = util.getNested(state, 'updatesUrl')
 
-    state['updatesUrl'] = s2f.s2f.postNewOpportunities(sCfg, sTok, fCfg, lim,
+    state['updatesUrl'] = s2f.s2f.postNewActivity(sCfg, sTok, fCfg, lim, opp,
             util.getNested(state, 'updatesUrl'))
 
     with open(stateF, 'w', encoding='utf-8') as f:

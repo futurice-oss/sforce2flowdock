@@ -3,6 +3,7 @@ Helpers for using the SalesForce API.
 https://developer.salesforce.com/page/REST_API
 """
 
+from collections import OrderedDict
 import contextlib
 import datetime
 import iso8601
@@ -17,6 +18,25 @@ from s2f import util
 
 def getLogger():
     return logging.getLogger(__name__)
+
+
+# Opportunity fields which, if changed, indicate an opportunity modification.
+# This dictionary maps the field names to printable labels.
+OPPORTUNITY_CHANGED_FIELDS = OrderedDict((
+    ('Name', 'Name'),
+    ('Description', 'Description'),
+    ('AccountName', 'Account'),
+    ('OwnerName', 'Owner'),
+    ('StageName', 'Stage'),
+    ('Amount', 'Amount'),
+    ('Probability', 'Probability'),
+    ('CloseDate', 'Close date'),
+    ('TypeOfSales', 'Type of sales'),
+    ('AvgHourPrice', 'Avg. hour price'),
+    ('FutuTeam', 'Tribe'),
+    ('IsClosed', 'Closed'),
+    ('IsWon', 'Won'),
+))
 
 
 class SClient():
@@ -190,7 +210,7 @@ class SClient():
         return url
 
 
-    def getJson(self, url):
+    def getJson(self, url, params=None):
         """
         Returns the JSON from url. If relative, it's relative to the API Root.
 
@@ -198,7 +218,7 @@ class SClient():
         """
         client = self._getOAuth2Client()
         url = urljoin(self._getAPIRootUrl(), url)
-        return client.get(url).json()
+        return client.get(url, params=params).json()
 
 
     def getAvailableResources(self):
@@ -377,3 +397,110 @@ class SClient():
 
     def getUser(self, ID):
         return self.getJson('sobjects/User/' + ID)
+
+    def getOpportunities(self, minModified=None):
+        """
+        Get all Opportunities, reverse sorted by modified time.
+
+        If minModified is not None, only get Opportunities modified at or after
+        this time.
+        """
+        fields = (
+            'Id',
+            'Name',
+            'Description',
+            'Account.Name',
+            'Owner.Name',
+            'StageName',
+            'Amount',
+            'Probability',
+            'CloseDate',
+            'Type_of_Sales__c',
+            'Average_Hour_Price__c',
+            'Futu_Team__c',
+
+            'IsClosed',
+            'IsWon',
+
+            'CreatedDate',
+            'CreatedBy.Name',
+            'LastModifiedDate',
+            'LastModifiedBy.Name',
+        )
+        q = 'SELECT ' + ','.join(fields) + ' FROM Opportunity'
+        if minModified:
+            q += ' WHERE LastModifiedDate >= ' + minModified
+        q += ' ORDER BY LastModifiedDate DESC'
+        resp = self.getJson('query/', params={'q': q})
+        results = resp['records']
+
+        while 'nextRecordsUrl' in resp and resp['nextRecordsUrl']:
+            # Can't test this – we get all the results in one call.
+            # But the docs describe this ‘next…’ field.
+            resp = self.getJson(resp['nextRecordsUrl'])
+            results.extend(resp['records'])
+
+        def fmtObj(x):
+            return {
+                'Id':           x['Id'],
+                'Name':         x['Name'],
+                'Description':  x['Description'],
+                'AccountName':  x['Account']['Name'],
+                'OwnerName':    x['Owner']['Name'],
+                'StageName':    x['StageName'],
+                'Amount':       x['Amount'],
+                'Probability':  x['Probability'],
+                'CloseDate':    x['CloseDate'],
+                'TypeOfSales':  x['Type_of_Sales__c'],
+                'AvgHourPrice': x['Average_Hour_Price__c'],
+                'FutuTeam':     x['Futu_Team__c'],
+                'IsClosed':     x['IsClosed'],
+                'IsWon':        x['IsWon'],
+
+                'CreatedDate':  x['CreatedDate'],
+                'CreatedByName':    x['CreatedBy']['Name'],
+                'LastModifiedDate': x['LastModifiedDate'],
+                'LastModifiedByName':   x['LastModifiedBy']['Name'],
+            }
+        return [fmtObj(r) for r in results]
+
+    def getOpportunityChanges(self, knownOpsSet, maxTeamItems):
+        """
+        Return allOps, newOps, changedOps.
+
+        newOps and changedOps together have at most maxTeamItems for each team.
+        """
+        latestModified, latestModifiedTs = None, 0
+        for op in knownOpsSet.values():
+            opTs = iso8601.parse_date(op['LastModifiedDate']).timestamp()
+            if opTs > latestModifiedTs:
+                latestModified = op['LastModifiedDate']
+                latestModifiedTs = opTs
+        incoming = self.getOpportunities(minModified=latestModified)
+
+        ns = util.getNested
+        def opHasChanged(v1, v2):
+            for f in OPPORTUNITY_CHANGED_FIELDS.keys():
+                if ns(v1, f) != ns(v2, f):
+                    return True
+            return False
+
+        # don't modify the caller's object, copy it
+        allOps = {k:v for k, v in knownOpsSet.items()}
+        newOps, changedOps = [], []
+        teamOps = {}
+        for op in incoming:
+            opId = op['Id']
+            team = op['FutuTeam']
+
+            if teamOps.get(team, 0) < maxTeamItems:
+                if opId not in allOps:
+                    teamOps[team] = teamOps.get(team, 0) + 1
+                    newOps.append(op)
+                elif opHasChanged(allOps[opId], op):
+                    teamOps[team] = teamOps.get(team, 0) + 1
+                    changedOps.append(op)
+
+            allOps[opId] = op
+
+        return list(allOps.values()), newOps, changedOps
