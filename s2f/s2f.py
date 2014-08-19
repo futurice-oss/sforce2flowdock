@@ -110,7 +110,8 @@ def fmtOpChatterForTeamInbox(detail, tzName):
 
     return {
         'teamName': detail['futu_team'],
-        'subject': '{opportunity_name} – {actor_name}'.format(**detail),
+        'subject': '[chatter] {opportunity_name} – {actor_name}'.format(
+            **detail),
         'textContent': txt,
         'project': detail['account_name'],
     }
