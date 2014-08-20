@@ -166,8 +166,17 @@ def fmtOpChangeForTeamInbox(oldOp, newOp, tzName):
             if fName == 'Description':
                 txt += '{}: {}\n'.format(fDisplay, str(newOp[fName]))
             else:
+                oldVal, newVal = oldOp[fName], newOp[fName]
+
+                # print 50000 as 50,000; check types: we also get string, None.
+                numTypes = {int, float}
+                if type(oldVal) in numTypes:
+                    oldVal = fmtNr(oldVal)
+                if type(newVal) in numTypes:
+                    newVal = fmtNr(newVal)
+
                 txt += '{}: {} → {}\n'.format(fDisplay,
-                        snippet(str(oldOp[fName])), snippet(str(newOp[fName])))
+                        snippet(str(oldVal)), snippet(str(newVal)))
 
     ts = int(iso8601.parse_date(newOp['LastModifiedDate']).timestamp())
     timeStr = fmtTimeStamp(ts, tzName)
