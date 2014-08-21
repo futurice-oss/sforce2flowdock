@@ -175,6 +175,12 @@ def fmtOpChangeForTeamInbox(oldOp, newOp, tzName):
                 if type(newVal) in numTypes:
                     newVal = fmtNr(newVal)
 
+                if fName == 'Probability':
+                    if type(oldVal) == str:
+                        oldVal += '%'
+                    if type(newVal) == str:
+                        newVal += '%'
+
                 txt += '{}: {} → {}\n'.format(fDisplay,
                         snippet(str(oldVal)), snippet(str(newVal)))
 
